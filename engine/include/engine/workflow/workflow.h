@@ -31,12 +31,12 @@ namespace engine{
             const std::string& id() const { return id_; }
             const std::string& name() const { return name_; }
             const std::vector<std::unique_ptr<Node>>& nodes() const { return nodes_; }
-            const std::vector<Edge>& edges() const { return edge_; }
+            const std::vector<Edge>& edges() const { return edges_; }
 
         private:
             std::string id_;
             std::string name_;
             std::vector<std::unique_ptr<Node>> nodes_;
-            std::vector<Edge> edge_;
+            std::vector<Edge> edges_;
     };
 }
