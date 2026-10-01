@@ -1,0 +1,3 @@
+add_executable(test_workflow test_workflow.cpp)
+target_link_libraries(test_workflow PRIVATE workflow_engine)
+add_test(NAME test_workflow COMMAND test_workflow)
