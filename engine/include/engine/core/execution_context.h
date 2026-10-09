@@ -24,7 +24,7 @@ namespace engine {
             }
 
             // Store or overwrite a value for a given key
-            void set(std::string& key, json value) {
+            void set(const std::string& key, json value) {
                 data_[key] = std::move(value);
             }
 

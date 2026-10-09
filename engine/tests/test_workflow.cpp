@@ -14,6 +14,10 @@ class TestNode : public Node {
         {}
 
         std::string type_name() const override { return "TestNode"; } 
+
+        ExecutionResult execute(ExecutionContext& /*context*/) override {
+            return ExecutionResult::success();
+        }
 };
 
 // ---------Helper Function-------------------------------------------------

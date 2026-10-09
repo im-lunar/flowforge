@@ -3,6 +3,8 @@
 #include "engine/core/types.h"
 #include <string>
 #include <nlohmann/json.hpp>
+#include "engine/core/execution_context.h"
+#include "engine/core/execution_result.h"
 
 namespace engine {
 
@@ -37,6 +39,9 @@ namespace engine {
             // return the specific type name
             // each derived class overrides this
             virtual std::string type_name() const = 0;
+
+            // Execute node logic using the shared context
+            virtual ExecutionResult execute(ExecutionContext& context) = 0;
 
         private:
             std::string id_;
