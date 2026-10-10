@@ -19,6 +19,7 @@ FetchContent_MakeAvailable(json)
 # Engine Library
 add_library(workflow_engine 
     src/workflow/workflow.cpp
+    src/execution/workflow_executor.cpp
 )
 
 target_include_directories(workflow_engine PUBLIC 
