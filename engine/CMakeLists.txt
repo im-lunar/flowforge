@@ -20,6 +20,7 @@ FetchContent_MakeAvailable(json)
 add_library(workflow_engine 
     src/workflow/workflow.cpp
     src/execution/workflow_executor.cpp
+    src/workflow/workflow_validator.cpp
 )
 
 target_include_directories(workflow_engine PUBLIC 
