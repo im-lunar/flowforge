@@ -1,4 +1,5 @@
 #include "engine/execution/workflow_executor.h"
+#include "engine/workflow/workflow_validator.h"
 
 namespace engine {
 
@@ -7,6 +8,19 @@ namespace engine {
     {};
 
     ExecutionResult WorkflowExecutor::execute(const Workflow& workflow, ExecutionContext& context) {
+
+        // Step 0: Pre-execution Graph Validation
+        WorkflowValidator validator;
+        ValidationResult val_result = validator.validate(workflow);
+
+        if (!val_result.is_valid()) {
+            std::string error_summary = "Workflow validation failed: ";
+            for (size_t i = 0; i < val_result.errors.size(); ++i) {
+                error_summary += val_result.errors[i] + (i + 1 < val_result.errors.size() ? "; " : "");
+            }
+            return ExecutionResult::failure(error_summary);
+        }
+
         // Step 1: Find entry point of the workflow
         Node* current_node = workflow.find_start_node();
         if (!current_node) {
