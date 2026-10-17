@@ -164,7 +164,7 @@ void test_executor_rejects_invalid_workflow() {
 
     ExecutionContext ctx;
     WorkflowExecutor executor;
-    ExecutionResult result = executor.execute(wf, ctx);
+    auto result = executor.execute(wf, ctx);
 
     check(!result.is_success(), "executor aborted invalid workflow");
     check(result.error_message.find("Workflow validation failed") != std::string::npos, 

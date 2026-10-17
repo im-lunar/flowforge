@@ -11,3 +11,8 @@ add_test(NAME test_execution COMMAND test_execution)
 add_executable(test_validation test_validation.cpp)
 target_link_libraries(test_validation PRIVATE workflow_engine)
 add_test(NAME test_validation COMMAND test_validation)
+
+# Phase 4 Retries & Reports test:
+add_executable(test_report test_report.cpp)
+target_link_libraries(test_report PRIVATE workflow_engine)
+add_test(NAME test_report COMMAND test_report)

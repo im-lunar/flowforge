@@ -10,6 +10,7 @@
 #include "engine/nodes/condition_node.h"
 #include "engine/nodes/action_node.h"
 #include "engine/execution/workflow_executor.h"
+#include "engine/core/execution_report.h"
 
 using namespace engine;
 
@@ -66,7 +67,7 @@ void test_linear_workflow() {
 
     ExecutionContext ctx;
     WorkflowExecutor executor;
-    ExecutionResult result = executor.execute(wf, ctx);
+    WorkflowExecutionReport result = executor.execute(wf, ctx);
 
     check(result.is_success(), "linear workflow executed successfully");
     check(ctx.get("machine_id") == "M001", "context retained trigger payload");
@@ -116,7 +117,7 @@ void test_branching_true_path() {
 
     ExecutionContext ctx;
     WorkflowExecutor executor;
-    ExecutionResult result = executor.execute(wf, ctx);
+    WorkflowExecutionReport result = executor.execute(wf, ctx);
 
     check(result.is_success(), "workflow executed successfully");
     check(ctx.has("alert_triggered") && ctx.get("alert_triggered") == true, "alert was triggered");
@@ -163,7 +164,7 @@ void test_branching_false_path() {
 
     ExecutionContext ctx;
     WorkflowExecutor executor;
-    ExecutionResult result = executor.execute(wf, ctx);
+    WorkflowExecutionReport result = executor.execute(wf, ctx);
 
     check(result.is_success(), "workflow executed successfully");
     check(!ctx.has("alert_triggered"), "alert was NOT triggered");
@@ -188,7 +189,7 @@ void test_condition_missing_field_failure() {
 
     ExecutionContext ctx;
     WorkflowExecutor executor;
-    ExecutionResult result = executor.execute(wf, ctx);
+    WorkflowExecutionReport result = executor.execute(wf, ctx);
 
     check(!result.is_success(), "executor caught failure");
     check(!result.error_message.empty(), "failure produced error message");
@@ -208,7 +209,7 @@ void test_infinite_loop_protection() {
 
     ExecutionContext ctx;
     WorkflowExecutor executor(10); // max 10 steps
-    ExecutionResult result = executor.execute(wf, ctx);
+    WorkflowExecutionReport result = executor.execute(wf, ctx);
     
     check(!result.is_success(), "executor terminated infinite loop");
 }
