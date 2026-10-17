@@ -1,5 +1,9 @@
 #include "engine/execution/workflow_executor.h"
 #include "engine/workflow/workflow_validator.h"
+#include "engine/core/execution_report.h"
+
+#include <chrono>
+#include <thread>
 
 namespace engine {
 
@@ -7,9 +11,26 @@ namespace engine {
         : max_steps_(max_steps)
     {};
 
-    ExecutionResult WorkflowExecutor::execute(const Workflow& workflow, ExecutionContext& context) {
+    WorkflowExecutionReport WorkflowExecutor::execute(const Workflow& workflow, ExecutionContext& context) {
 
-        // Step 0: Pre-execution Graph Validation
+        // Workflow start timestamp for WorkflowExecutionReport
+        auto start = std::chrono::steady_clock::now();
+        std::vector<NodeExecutionRecord> node_records;
+
+        auto make_failure = [&](const std::string& msg) -> WorkflowExecutionReport {
+            auto end = std::chrono::steady_clock::now();
+            long ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+            WorkflowExecutionReport r;
+            r.overall_status = ExecutionStatus::FAILURE;
+            r.error_message = msg;
+            r.total_duration_ms = ms;
+            r.node_records = node_records;
+
+            return r;
+        };
+
+        // Step 0: Pre-execution Gra ph Validation
         WorkflowValidator validator;
         ValidationResult val_result = validator.validate(workflow);
 
@@ -18,13 +39,13 @@ namespace engine {
             for (size_t i = 0; i < val_result.errors.size(); ++i) {
                 error_summary += val_result.errors[i] + (i + 1 < val_result.errors.size() ? "; " : "");
             }
-            return ExecutionResult::failure(error_summary);
+            return make_failure(error_summary);
         }
 
         // Step 1: Find entry point of the workflow
         Node* current_node = workflow.find_start_node();
         if (!current_node) {
-            return ExecutionResult::failure("Workflow has no start node (entry point)");
+            return make_failure("Workflow has no start node (entry point)");
         }
 
         // Step 2: Traverse and execute
@@ -32,13 +53,52 @@ namespace engine {
 
         while (current_node != nullptr) {
             if (++steps > max_steps_) {
-                return ExecutionResult::failure("Execution step limit exceeded (infinite loop detected)");
+                return make_failure("Execution step limit exceeded (infinite loop detected)");
             }
 
-            // Run the current node
-            ExecutionResult result = current_node->execute(context);
+            //  1. Read retry config (defaults: 0 retries, 100ms delay)
+            int max_retries = current_node->config().value("max_retries", 0);
+            int retry_delay_ms = current_node->config().value("retry_delay_ms", 100);
+
+            // Total tries allowed = 1 initial try + max_retries
+            int total_attempts = 1 + max_retries;
+            int attempts_taken = 0;
+
+            ExecutionResult result = ExecutionResult::failure("Not executed");
+
+            auto node_start = std::chrono::steady_clock::now();
+
+            // retry loop
+            for (int attempt = 1; attempt <= total_attempts; ++attempt) {
+                attempts_taken = attempt;
+                result = current_node->execute(context);
+
+                if (result.is_success()) {
+                    break;
+                }
+
+                if (attempt < total_attempts) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(retry_delay_ms));
+                    retry_delay_ms *= 2;
+                }
+            }
+
+            auto node_end = std::chrono::steady_clock::now();
+            long node_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(node_end - node_start).count();
+
+            // Record this node's execution
+            NodeExecutionRecord record;
+            record.node_id = current_node->id();
+            record.status = result.status;
+            record.error_message = result.error_message;
+            record.duration_ms = node_duration_ms;
+            record.attempts = attempts_taken;
+
+            node_records.push_back(std::move(record));
+
+            // If it failed even after retries, halt the workflow
             if (!result.is_success()) {
-                return ExecutionResult::failure("Node '" + current_node->id() + "' failed: " + result.error_message);
+                return make_failure("Node '" + current_node->id() + "' failed: " + result.error_message);
             }
 
             // Step 3: Find outgoing edges from this node
@@ -84,10 +144,20 @@ namespace engine {
             // Move to the next node in the graph
             current_node = workflow.get_node(next_edge->target_node_id);
             if (!current_node) {
-                return ExecutionResult::failure("Target node not found: " + next_edge->target_node_id);
+                return make_failure("Target node not found: " + next_edge->target_node_id);
             }
         }
-            
-        return ExecutionResult::success(); 
+
+        auto end = std::chrono::steady_clock::now();
+        long ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+        WorkflowExecutionReport report;
+        report.overall_status = ExecutionStatus::SUCCESS;
+        report.total_duration_ms = ms;
+        report.node_records = std::move(node_records);
+        report.error_message = "";
+        // report.node_records  ← will fill this in next step
+        return report;
+         
     }
 }
