@@ -89,7 +89,7 @@ namespace engine {
             json read_telemetry() const;
             
             // Simulates an anomaly event (e.g. OVERHEATING)
-            void trigger_anamoly(MachineState state);
+            void trigger_anomaly(MachineState state);
 
             // Resets the machine back to normal conditions
             void reset();
