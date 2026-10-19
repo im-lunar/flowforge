@@ -16,3 +16,8 @@ add_test(NAME test_validation COMMAND test_validation)
 add_executable(test_report test_report.cpp)
 target_link_libraries(test_report PRIVATE workflow_engine)
 add_test(NAME test_report COMMAND test_report)
+
+# Phase 5 Simulator tests:
+add_executable(test_simulator test_simulator.cpp)
+target_link_libraries(test_simulator PRIVATE workflow_engine)
+add_test(NAME test_simulator COMMAND test_simulator)
